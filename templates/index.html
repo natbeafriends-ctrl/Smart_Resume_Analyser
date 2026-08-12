@@ -20,12 +20,17 @@
   {% if resumes %}
     <ul class="ticket-list">
       {% for resume in resumes %}
-        {% set id, filename, file_type, uploaded_at = resume %}
+        {% set id, filename, file_type, uploaded_at, total_score = resume %}
         <li>
           <a class="ticket" href="{{ url_for('view_resume', resume_id=id) }}">
             <div class="ticket-main">
               <span class="ticket-name">{{ filename }}</span>
-              <span class="ticket-type">{{ file_type }}</span>
+              <span style="display:flex; gap:8px; flex-shrink:0;">
+                {% if total_score is not none %}
+                  <span class="score-badge {% if total_score >= 75 %}score-high{% elif total_score >= 50 %}score-mid{% else %}score-low{% endif %}">{{ total_score }}/100</span>
+                {% endif %}
+                <span class="ticket-type">{{ file_type }}</span>
+              </span>
             </div>
             <div class="ticket-perf"></div>
             <div class="ticket-meta">

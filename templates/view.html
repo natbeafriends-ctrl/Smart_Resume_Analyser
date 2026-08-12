@@ -27,4 +27,44 @@
       {% endif %}
     </div>
   </div>
+
+  <p class="section-label" style="margin-top: 32px;">Score breakdown</p>
+
+  <div class="score-panel">
+    {% if total_score is not none and categories %}
+      <div class="score-panel-header">
+        <div class="score-total">{{ total_score }}<span class="out-of"> / 100</span></div>
+        <form class="rescore-form" action="{{ url_for('rescore', resume_id=id) }}" method="post">
+          <button type="submit" class="rescore-btn">Recalculate</button>
+        </form>
+      </div>
+      <div class="score-perf"></div>
+      <div class="score-categories">
+        {% for cat_name, cat_data in categories.items() %}
+          {% set pct = (cat_data.score / cat_data.max * 100) if cat_data.max else 0 %}
+          <div>
+            <div class="category-row-header">
+              <span class="category-name">{{ cat_name.replace('_', ' ') }}</span>
+              <span class="category-score">{{ cat_data.score }}/{{ cat_data.max }}</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: {{ pct }}%; background: {% if pct >= 75 %}var(--accent-teal){% elif pct >= 50 %}var(--accent-amber){% else %}var(--error){% endif %};"></div>
+            </div>
+            <ul class="category-details">
+              {% for detail in cat_data.details %}
+                <li>&middot; {{ detail }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="no-score">
+        <span>This resume hasn't been scored yet.</span>
+        <form class="rescore-form" action="{{ url_for('rescore', resume_id=id) }}" method="post">
+          <button type="submit" class="rescore-btn">Score now</button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
 {% endblock %}

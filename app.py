@@ -1,21 +1,27 @@
 """
 app.py
 ------
-Smart Resume Analyzer - Module 1: Resume Upload and Parsing
+Smart Resume Analyzer - Module 1 (upload/parsing) + Module 2 (scoring)
 
 Routes:
-  GET  /            -> Show upload form + list of previously uploaded resumes
-  POST /upload       -> Handle file upload, extract text, store in DB
-  GET  /resume/<id>  -> View extracted text for a specific resume
+  GET  /                     -> Upload form + list of previously uploaded resumes
+  POST /upload                -> Handle file upload, extract text, score, store in DB
+  GET  /resume/<id>           -> View extracted text + score breakdown for a resume
+  POST /resume/<id>/rescore   -> Recompute and re-save a resume's score
 """
 
 import os
+import json
 import uuid
 from flask import Flask, request, render_template, redirect, url_for, flash
 from werkzeug.utils import secure_filename
 
-from database import init_db, save_resume, get_all_resumes, get_resume_by_id
+from database import (
+    init_db, save_resume, get_all_resumes, get_resume_by_id,
+    save_score, get_score_by_id,
+)
 from extractor import extract_text
+from scorer import score_resume
 
 UPLOAD_FOLDER = "uploads"
 ALLOWED_EXTENSIONS = {"pdf", "docx"}
@@ -80,6 +86,10 @@ def upload():
         flash("Warning: no text could be extracted from this file (it may be a scanned/image-based document).")
 
     resume_id = save_resume(original_filename, file_extension, extracted_text)
+
+    result = score_resume(extracted_text)
+    save_score(resume_id, result["total_score"], json.dumps(result["categories"]))
+
     flash(f"'{original_filename}' uploaded and processed successfully!")
     return redirect(url_for("view_resume", resume_id=resume_id))
 
@@ -90,7 +100,30 @@ def view_resume(resume_id):
     if resume is None:
         flash("Resume not found.")
         return redirect(url_for("index"))
-    return render_template("view.html", resume=resume)
+
+    total_score, score_breakdown_json = get_score_by_id(resume_id)
+    categories = json.loads(score_breakdown_json) if score_breakdown_json else None
+
+    return render_template(
+        "view.html", resume=resume, total_score=total_score, categories=categories
+    )
+
+
+@app.route("/resume/<int:resume_id>/rescore", methods=["POST"])
+def rescore(resume_id):
+    """Recompute and re-save the score for a resume — convenience route for
+    re-running Module 2's rule-based logic after scorer.py changes, without
+    needing to re-upload the file."""
+    resume = get_resume_by_id(resume_id)
+    if resume is None:
+        flash("Resume not found.")
+        return redirect(url_for("index"))
+
+    _, _, _, extracted_text, _ = resume
+    result = score_resume(extracted_text)
+    save_score(resume_id, result["total_score"], json.dumps(result["categories"]))
+    flash("Score recalculated.")
+    return redirect(url_for("view_resume", resume_id=resume_id))
 
 
 if __name__ == "__main__":
