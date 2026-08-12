@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% set id, filename, file_type, extracted_text, uploaded_at = resume %}
+
+{% block title %}{{ filename }} — Smart Resume Analyzer{% endblock %}
+
+{% block content %}
+  <a class="back-link" href="{{ url_for('index') }}">&larr; back to intake</a>
+
+  <div class="doc-card">
+    <div class="doc-header">
+      <div>
+        <p class="doc-title">{{ filename }}</p>
+        <div class="doc-tags">
+          <span class="doc-tag">{{ file_type }}</span>
+          <span class="doc-tag">{{ uploaded_at }}</span>
+        </div>
+      </div>
+      <div class="doc-id">#{{ "%04d"|format(id) }}</div>
+    </div>
+    <div class="doc-perf"></div>
+    <div class="doc-body">
+      {% if extracted_text %}
+        <pre>{{ extracted_text }}</pre>
+      {% else %}
+        <p class="no-text">No text could be extracted from this file — it may be a scanned or image-based document.</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

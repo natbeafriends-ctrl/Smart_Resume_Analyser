@@ -1,0 +1,16 @@
+# Uploaded resume files — don't version-control user data
+uploads/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment / secrets
+.env
+
+# OS / editor cruft
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Intake — Smart Resume Analyzer{% endblock %}
+
+{% block content %}
+  <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data" id="upload-form">
+    <div class="dropzone" id="dropzone">
+      <h2>Drop a resume, or browse a file</h2>
+      <p>PDF or DOCX &middot; up to 5&nbsp;MB</p>
+      <label class="file-label" for="file-input">Choose file</label>
+      <input type="file" id="file-input" name="resume" accept=".pdf,.docx">
+      <span id="file-name"></span>
+      <br>
+      <button type="submit" class="submit-btn" id="submit-btn">Upload &amp; process</button>
+    </div>
+  </form>
+
+  <p class="section-label">Processed resumes ({{ resumes|length }})</p>
+
+  {% if resumes %}
+    <ul class="ticket-list">
+      {% for resume in resumes %}
+        {% set id, filename, file_type, uploaded_at = resume %}
+        <li>
+          <a class="ticket" href="{{ url_for('view_resume', resume_id=id) }}">
+            <div class="ticket-main">
+              <span class="ticket-name">{{ filename }}</span>
+              <span class="ticket-type">{{ file_type }}</span>
+            </div>
+            <div class="ticket-perf"></div>
+            <div class="ticket-meta">
+              <span>#{{ "%04d"|format(id) }}</span>
+              <span>{{ uploaded_at }}</span>
+            </div>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="empty-state">No resumes processed yet — upload one above to get started.</div>
+  {% endif %}
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const fileNameLabel = document.getElementById('file-name');
+    const submitBtn = document.getElementById('submit-btn');
+
+    function showFile(file) {
+      if (file) {
+        fileNameLabel.textContent = file.name;
+        submitBtn.classList.add('show');
+      } else {
+        fileNameLabel.textContent = '';
+        submitBtn.classList.remove('show');
+      }
+    }
+
+    fileInput.addEventListener('change', () => showFile(fileInput.files[0]));
+
+    ['dragenter', 'dragover'].forEach(evt =>
+      dropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        dropzone.classList.add('drag-over');
+      })
+    );
+
+    ['dragleave', 'drop'].forEach(evt =>
+      dropzone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('drag-over');
+      })
+    );
+
+    dropzone.addEventListener('drop', (e) => {
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        fileInput.files = e.dataTransfer.files;
+        showFile(file);
+      }
+    });
+  </script>
+{% endblock %}
