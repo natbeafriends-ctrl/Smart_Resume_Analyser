@@ -19,7 +19,10 @@ structure, technical skills, and missing keywords), using rule-based logic
   improvement suggestions combining Module 2's weak-category signals,
   Module 3's missing keywords, and two new checks (certifications,
   internship experience).
-- ⬜ Module 5 — Dashboard and Report Generation
+- ✅ **Module 5 — Dashboard and Report Generation.** Visual summary page
+  per resume: score and ATS compatibility gauges, category breakdown,
+  missing skills, and top suggestions — with a print-friendly layout that
+  doubles as a downloadable report (browser "Print to PDF").
 
 ## Tech stack
 
@@ -43,8 +46,9 @@ smart_resume_analyzer/
 ├── static/css/style.css
 └── templates/
     ├── base.html
-    ├── index.html     # upload form + resume list (with score badges)
-    └── view.html      # extracted text + score + ATS panel + suggestions
+    ├── index.html      # upload form + resume list (with score badges)
+    ├── view.html        # extracted text + score + ATS panel + suggestions
+    └── dashboard.html    # Module 5: visual summary + printable report
 ```
 
 ## Setup

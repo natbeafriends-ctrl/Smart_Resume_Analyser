@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% set id, filename, file_type, extracted_text, uploaded_at = resume %}
+
+{% block title %}Dashboard — {{ filename }}{% endblock %}
+
+{% block content %}
+  <a class="back-link" href="{{ url_for('view_resume', resume_id=id) }}">&larr; back to details</a>
+
+  <div class="dashboard-header">
+    <div>
+      <p class="dashboard-title">{{ filename }}</p>
+      <p class="dashboard-subtitle">#{{ "%04d"|format(id) }} &middot; {{ file_type }} &middot; uploaded {{ uploaded_at }}</p>
+    </div>
+    <div class="dashboard-actions">
+      <button class="dashboard-link-btn" onclick="window.print()" type="button">Print report</button>
+    </div>
+  </div>
+
+  <div class="gauge-row">
+    <div class="gauge-card">
+      <p class="gauge-label">Resume score</p>
+      {% if total_score is not none %}
+        {% set score_color = 'var(--accent-teal)' if total_score >= 75 else ('var(--accent-amber)' if total_score >= 50 else 'var(--error)') %}
+        <div class="donut" style="background: conic-gradient({{ score_color }} {{ total_score }}%, var(--line) {{ total_score }}% 100%);">
+          <div class="donut-inner">
+            <span class="donut-value">{{ total_score }}</span>
+            <span class="donut-unit">/ 100</span>
+          </div>
+        </div>
+      {% else %}
+        <div class="gauge-empty">Not scored yet</div>
+      {% endif %}
+    </div>
+
+    <div class="gauge-card">
+      <p class="gauge-label">ATS compatibility</p>
+      {% if ats_result %}
+        {% set ats_color = 'var(--accent-teal)' if ats_result.match_percent >= 75 else ('var(--accent-amber)' if ats_result.match_percent >= 50 else 'var(--error)') %}
+        <div class="donut" style="background: conic-gradient({{ ats_color }} {{ ats_result.match_percent }}%, var(--line) {{ ats_result.match_percent }}% 100%);">
+          <div class="donut-inner">
+            <span class="donut-value">{{ ats_result.match_percent }}%</span>
+          </div>
+        </div>
+        <p class="gauge-sub">vs. {{ ats_result.role }}</p>
+      {% else %}
+        <div class="gauge-empty">No ATS check run yet</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if categories %}
+    <p class="section-label">Category breakdown</p>
+    <div class="mini-category-grid">
+      {% for cat_name, cat_data in categories.items() %}
+        {% set pct = (cat_data.score / cat_data.max * 100) if cat_data.max else 0 %}
+        <div class="mini-category-row">
+          <span class="mini-category-name">{{ cat_name.replace('_', ' ') }}</span>
+          <div class="bar-track">
+            <div class="bar-fill" style="width: {{ pct }}%; background: {% if pct >= 75 %}var(--accent-teal){% elif pct >= 50 %}var(--accent-amber){% else %}var(--error){% endif %};"></div>
+          </div>
+          <span class="mini-category-pct">{{ cat_data.score }}/{{ cat_data.max }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <p class="section-label">Missing skills</p>
+  <div class="dashboard-panel">
+    {% if ats_result and ats_result.missing %}
+      <div class="chip-row">
+        {% for kw in ats_result.missing %}
+          <span class="chip missing">{{ kw }}</span>
+        {% endfor %}
+      </div>
+    {% elif ats_result %}
+      <p class="no-text" style="margin:0;">No missing keywords for {{ ats_result.role }} — great match!</p>
+    {% else %}
+      <p class="no-text" style="margin:0;">Run an ATS check on the details page to see missing skills for a target role.</p>
+    {% endif %}
+  </div>
+
+  <p class="section-label">Top suggestions</p>
+  <div class="dashboard-panel">
+    {% if feedback is not none %}
+      {% if feedback|length > 0 %}
+        <ul class="feedback-list" style="padding: 0;">
+          {% for item in feedback[:5] %}
+            <li class="feedback-item">
+              <span class="feedback-tag">{{ item.category }}</span>
+              <span class="feedback-text">{{ item.suggestion }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="no-text" style="margin:0; color: var(--accent-teal);">✓ No major gaps found — this resume looks solid.</p>
+      {% endif %}
+    {% else %}
+      <p class="no-text" style="margin:0;">No suggestions generated yet — visit the details page to generate them.</p>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -3,11 +3,13 @@ app.py
 ------
 Smart Resume Analyzer - Module 1 (upload/parsing) + Module 2 (scoring)
 + Module 3 (ATS keyword checker) + Module 4 (smart feedback)
++ Module 5 (dashboard)
 
 Routes:
   GET  /                       -> Upload form + list of previously uploaded resumes
   POST /upload                  -> Handle file upload, extract text, score, feedback, store in DB
   GET  /resume/<id>             -> View extracted text, score, ATS result, and suggestions
+  GET  /resume/<id>/dashboard   -> Visual summary dashboard (score, ATS %, missing skills, suggestions)
   POST /resume/<id>/rescore     -> Recompute and re-save a resume's score
   POST /resume/<id>/ats_check   -> Run the ATS keyword checker for a chosen role
   POST /resume/<id>/feedback    -> Manually regenerate smart feedback suggestions
@@ -61,6 +63,34 @@ def _regenerate_feedback(resume_id, extracted_text):
 
     feedback = generate_feedback(extracted_text, score_result=score_result, ats_result=ats_result)
     save_feedback(resume_id, json.dumps(feedback))
+
+
+def _load_resume_context(resume_id):
+    """Fetch a resume plus everything Modules 2-4 have computed for it.
+    Shared by view_resume and the Module 5 dashboard so both pages stay in
+    sync without duplicating the fetch/parse logic. Returns None if the
+    resume doesn't exist."""
+    resume = get_resume_by_id(resume_id)
+    if resume is None:
+        return None
+
+    total_score, score_breakdown_json = get_score_by_id(resume_id)
+    categories = json.loads(score_breakdown_json) if score_breakdown_json else None
+
+    ats_role, ats_result_json = get_ats_result_by_id(resume_id)
+    ats_result = json.loads(ats_result_json) if ats_result_json else None
+
+    feedback_json = get_feedback_by_id(resume_id)
+    feedback = json.loads(feedback_json) if feedback_json else None
+
+    return {
+        "resume": resume,
+        "total_score": total_score,
+        "categories": categories,
+        "ats_result": ats_result,
+        "feedback": feedback,
+        "roles": list(ROLE_KEYWORDS.keys()),
+    }
 
 
 @app.route("/")
@@ -122,29 +152,22 @@ def upload():
 
 @app.route("/resume/<int:resume_id>")
 def view_resume(resume_id):
-    resume = get_resume_by_id(resume_id)
-    if resume is None:
+    context = _load_resume_context(resume_id)
+    if context is None:
         flash("Resume not found.")
         return redirect(url_for("index"))
+    return render_template("view.html", **context)
 
-    total_score, score_breakdown_json = get_score_by_id(resume_id)
-    categories = json.loads(score_breakdown_json) if score_breakdown_json else None
 
-    ats_role, ats_result_json = get_ats_result_by_id(resume_id)
-    ats_result = json.loads(ats_result_json) if ats_result_json else None
-
-    feedback_json = get_feedback_by_id(resume_id)
-    feedback = json.loads(feedback_json) if feedback_json else None
-
-    return render_template(
-        "view.html",
-        resume=resume,
-        total_score=total_score,
-        categories=categories,
-        ats_result=ats_result,
-        roles=list(ROLE_KEYWORDS.keys()),
-        feedback=feedback,
-    )
+@app.route("/resume/<int:resume_id>/dashboard")
+def dashboard(resume_id):
+    """Module 5: visual summary of a resume's score, ATS compatibility,
+    missing skills, and suggestions in one interactive, printable view."""
+    context = _load_resume_context(resume_id)
+    if context is None:
+        flash("Resume not found.")
+        return redirect(url_for("index"))
+    return render_template("dashboard.html", **context)
 
 
 @app.route("/resume/<int:resume_id>/rescore", methods=["POST"])
