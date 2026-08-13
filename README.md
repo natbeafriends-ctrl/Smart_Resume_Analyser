@@ -15,7 +15,10 @@ structure, technical skills, and missing keywords), using rule-based logic
 - ✅ **Module 3 — ATS Keyword Checker.** Compare a resume against
   role-specific keyword lists (Data Analyst, Web Developer, AI Engineer,
   Cloud Engineer) and get a match percentage plus improvement suggestions.
-- ⬜ Module 4 — Smart Feedback System
+- ✅ **Module 4 — Smart Feedback System.** Prioritized, rule-based
+  improvement suggestions combining Module 2's weak-category signals,
+  Module 3's missing keywords, and two new checks (certifications,
+  internship experience).
 - ⬜ Module 5 — Dashboard and Report Generation
 
 ## Tech stack
@@ -34,13 +37,14 @@ smart_resume_analyzer/
 ├── extractor.py       # PDF/DOCX text extraction
 ├── scorer.py          # Module 2: rule-based resume scoring
 ├── ats_checker.py     # Module 3: rule-based ATS keyword checker
+├── feedback.py         # Module 4: rule-based smart feedback system
 ├── utils.py            # Shared helpers (boundary-safe keyword matching)
 ├── requirements.txt
 ├── static/css/style.css
 └── templates/
     ├── base.html
     ├── index.html     # upload form + resume list (with score badges)
-    └── view.html      # extracted text + score breakdown + ATS panel
+    └── view.html      # extracted text + score + ATS panel + suggestions
 ```
 
 ## Setup

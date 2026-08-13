@@ -45,6 +45,8 @@ def _ensure_score_columns(conn, cursor):
         cursor.execute("ALTER TABLE resumes ADD COLUMN ats_role VARCHAR(50) DEFAULT NULL")
     if not _column_exists(cursor, "resumes", "ats_result"):
         cursor.execute("ALTER TABLE resumes ADD COLUMN ats_result LONGTEXT DEFAULT NULL")
+    if not _column_exists(cursor, "resumes", "feedback_result"):
+        cursor.execute("ALTER TABLE resumes ADD COLUMN feedback_result LONGTEXT DEFAULT NULL")
     conn.commit()
 
 
@@ -195,6 +197,41 @@ def get_ats_result_by_id(resume_id):
             """, (resume_id,))
             row = cursor.fetchone()
             return row if row else (None, None)
+        finally:
+            cursor.close()
+    finally:
+        conn.close()
+
+
+def save_feedback(resume_id, feedback_json):
+    """Save (or overwrite) the smart feedback suggestions for a resume.
+    feedback_json should already be a JSON string (see feedback.py's
+    generate_feedback() output, json.dumps'd by the caller)."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                UPDATE resumes SET feedback_result = %s WHERE id = %s
+            """, (feedback_json, resume_id))
+            conn.commit()
+        finally:
+            cursor.close()
+    finally:
+        conn.close()
+
+
+def get_feedback_by_id(resume_id):
+    """Return feedback_result_json for a resume, or None if not generated yet."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT feedback_result FROM resumes WHERE id = %s
+            """, (resume_id,))
+            row = cursor.fetchone()
+            return row[0] if row else None
         finally:
             cursor.close()
     finally:

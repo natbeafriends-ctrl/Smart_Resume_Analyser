@@ -123,4 +123,33 @@
       </div>
     {% endif %}
   </div>
+
+  <p class="section-label" style="margin-top: 32px;">Smart suggestions</p>
+
+  <div class="feedback-panel">
+    <div class="feedback-header">
+      <span class="feedback-count">
+        {% if feedback is not none %}{{ feedback|length }} suggestion{{ 's' if feedback|length != 1 }}{% else %}No suggestions yet{% endif %}
+      </span>
+      <form class="rescore-form" action="{{ url_for('refresh_feedback', resume_id=id) }}" method="post">
+        <button type="submit" class="rescore-btn">Refresh suggestions</button>
+      </form>
+    </div>
+    {% if feedback is not none %}
+      {% if feedback|length > 0 %}
+        <ul class="feedback-list">
+          {% for item in feedback %}
+            <li class="feedback-item">
+              <span class="feedback-tag">{{ item.category }}</span>
+              <span class="feedback-text">{{ item.suggestion }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="all-good">✓ No major gaps found — this resume looks solid.</p>
+      {% endif %}
+    {% else %}
+      <p class="no-text" style="padding: 0 22px 20px;">Click "Refresh suggestions" to generate feedback based on the score and ATS results above.</p>
+    {% endif %}
+  </div>
 {% endblock %}

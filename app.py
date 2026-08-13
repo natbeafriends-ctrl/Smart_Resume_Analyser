@@ -2,14 +2,15 @@
 app.py
 ------
 Smart Resume Analyzer - Module 1 (upload/parsing) + Module 2 (scoring)
-+ Module 3 (ATS keyword checker)
++ Module 3 (ATS keyword checker) + Module 4 (smart feedback)
 
 Routes:
   GET  /                       -> Upload form + list of previously uploaded resumes
-  POST /upload                  -> Handle file upload, extract text, score, store in DB
-  GET  /resume/<id>             -> View extracted text, score breakdown, and ATS result
+  POST /upload                  -> Handle file upload, extract text, score, feedback, store in DB
+  GET  /resume/<id>             -> View extracted text, score, ATS result, and suggestions
   POST /resume/<id>/rescore     -> Recompute and re-save a resume's score
   POST /resume/<id>/ats_check   -> Run the ATS keyword checker for a chosen role
+  POST /resume/<id>/feedback    -> Manually regenerate smart feedback suggestions
 """
 
 import os
@@ -21,10 +22,12 @@ from werkzeug.utils import secure_filename
 from database import (
     init_db, save_resume, get_all_resumes, get_resume_by_id,
     save_score, get_score_by_id, save_ats_result, get_ats_result_by_id,
+    save_feedback, get_feedback_by_id,
 )
 from extractor import extract_text
 from scorer import score_resume
 from ats_checker import check_ats, ROLE_KEYWORDS
+from feedback import generate_feedback
 
 UPLOAD_FOLDER = "uploads"
 ALLOWED_EXTENSIONS = {"pdf", "docx"}
@@ -39,6 +42,25 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def _regenerate_feedback(resume_id, extracted_text):
+    """Module 4: rebuild the smart feedback list using whatever Module 2
+    score and Module 3 ATS data currently exist for this resume, and save
+    it. Called after upload, rescore, and ats_check so feedback always
+    reflects the latest data from the other two modules."""
+    _, score_breakdown_json = get_score_by_id(resume_id)
+    score_result = None
+    if score_breakdown_json:
+        score_result = {
+            "categories": json.loads(score_breakdown_json),
+        }
+
+    _, ats_result_json = get_ats_result_by_id(resume_id)
+    ats_result = json.loads(ats_result_json) if ats_result_json else None
+
+    feedback = generate_feedback(extracted_text, score_result=score_result, ats_result=ats_result)
+    save_feedback(resume_id, json.dumps(feedback))
 
 
 @app.route("/")
@@ -92,6 +114,7 @@ def upload():
 
     result = score_resume(extracted_text)
     save_score(resume_id, result["total_score"], json.dumps(result["categories"]))
+    _regenerate_feedback(resume_id, extracted_text)
 
     flash(f"'{original_filename}' uploaded and processed successfully!")
     return redirect(url_for("view_resume", resume_id=resume_id))
@@ -110,6 +133,9 @@ def view_resume(resume_id):
     ats_role, ats_result_json = get_ats_result_by_id(resume_id)
     ats_result = json.loads(ats_result_json) if ats_result_json else None
 
+    feedback_json = get_feedback_by_id(resume_id)
+    feedback = json.loads(feedback_json) if feedback_json else None
+
     return render_template(
         "view.html",
         resume=resume,
@@ -117,6 +143,7 @@ def view_resume(resume_id):
         categories=categories,
         ats_result=ats_result,
         roles=list(ROLE_KEYWORDS.keys()),
+        feedback=feedback,
     )
 
 
@@ -133,6 +160,7 @@ def rescore(resume_id):
     _, _, _, extracted_text, _ = resume
     result = score_resume(extracted_text)
     save_score(resume_id, result["total_score"], json.dumps(result["categories"]))
+    _regenerate_feedback(resume_id, extracted_text)
     flash("Score recalculated.")
     return redirect(url_for("view_resume", resume_id=resume_id))
 
@@ -154,7 +182,23 @@ def ats_check(resume_id):
     _, _, _, extracted_text, _ = resume
     result = check_ats(extracted_text, role)
     save_ats_result(resume_id, role, json.dumps(result))
+    _regenerate_feedback(resume_id, extracted_text)
     flash(f"ATS check complete for {role}.")
+    return redirect(url_for("view_resume", resume_id=resume_id))
+
+
+@app.route("/resume/<int:resume_id>/feedback", methods=["POST"])
+def refresh_feedback(resume_id):
+    """Manually regenerate Module 4's smart feedback suggestions, e.g. after
+    running/re-running Module 2 or 3 checks separately."""
+    resume = get_resume_by_id(resume_id)
+    if resume is None:
+        flash("Resume not found.")
+        return redirect(url_for("index"))
+
+    _, _, _, extracted_text, _ = resume
+    _regenerate_feedback(resume_id, extracted_text)
+    flash("Suggestions refreshed.")
     return redirect(url_for("view_resume", resume_id=resume_id))
 
 
