@@ -9,8 +9,12 @@ structure, technical skills, and missing keywords), using rule-based logic
 
 - ✅ **Module 1 — Resume Upload and Parsing.** Upload a PDF/DOCX resume,
   extract its text, and store it in MySQL.
-- ⬜ Module 2 — Resume Score Analyzer
-- ⬜ Module 3 — ATS Keyword Checker
+- ✅ **Module 2 — Resume Score Analyzer.** Rule-based score out of 100
+  across contact info, structure, skills, projects, education, and
+  completeness.
+- ✅ **Module 3 — ATS Keyword Checker.** Compare a resume against
+  role-specific keyword lists (Data Analyst, Web Developer, AI Engineer,
+  Cloud Engineer) and get a match percentage plus improvement suggestions.
 - ⬜ Module 4 — Smart Feedback System
 - ⬜ Module 5 — Dashboard and Report Generation
 
@@ -28,12 +32,15 @@ smart_resume_analyzer/
 ├── config.py         # DB connection settings (env-var overridable)
 ├── database.py       # MySQL access layer
 ├── extractor.py       # PDF/DOCX text extraction
+├── scorer.py          # Module 2: rule-based resume scoring
+├── ats_checker.py     # Module 3: rule-based ATS keyword checker
+├── utils.py            # Shared helpers (boundary-safe keyword matching)
 ├── requirements.txt
 ├── static/css/style.css
 └── templates/
     ├── base.html
-    ├── index.html     # upload form + resume list
-    └── view.html      # single resume's extracted text
+    ├── index.html     # upload form + resume list (with score badges)
+    └── view.html      # extracted text + score breakdown + ATS panel
 ```
 
 ## Setup
