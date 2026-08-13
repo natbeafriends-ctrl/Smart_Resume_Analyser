@@ -2,12 +2,14 @@
 app.py
 ------
 Smart Resume Analyzer - Module 1 (upload/parsing) + Module 2 (scoring)
++ Module 3 (ATS keyword checker)
 
 Routes:
-  GET  /                     -> Upload form + list of previously uploaded resumes
-  POST /upload                -> Handle file upload, extract text, score, store in DB
-  GET  /resume/<id>           -> View extracted text + score breakdown for a resume
-  POST /resume/<id>/rescore   -> Recompute and re-save a resume's score
+  GET  /                       -> Upload form + list of previously uploaded resumes
+  POST /upload                  -> Handle file upload, extract text, score, store in DB
+  GET  /resume/<id>             -> View extracted text, score breakdown, and ATS result
+  POST /resume/<id>/rescore     -> Recompute and re-save a resume's score
+  POST /resume/<id>/ats_check   -> Run the ATS keyword checker for a chosen role
 """
 
 import os
@@ -18,10 +20,11 @@ from werkzeug.utils import secure_filename
 
 from database import (
     init_db, save_resume, get_all_resumes, get_resume_by_id,
-    save_score, get_score_by_id,
+    save_score, get_score_by_id, save_ats_result, get_ats_result_by_id,
 )
 from extractor import extract_text
 from scorer import score_resume
+from ats_checker import check_ats, ROLE_KEYWORDS
 
 UPLOAD_FOLDER = "uploads"
 ALLOWED_EXTENSIONS = {"pdf", "docx"}
@@ -104,8 +107,16 @@ def view_resume(resume_id):
     total_score, score_breakdown_json = get_score_by_id(resume_id)
     categories = json.loads(score_breakdown_json) if score_breakdown_json else None
 
+    ats_role, ats_result_json = get_ats_result_by_id(resume_id)
+    ats_result = json.loads(ats_result_json) if ats_result_json else None
+
     return render_template(
-        "view.html", resume=resume, total_score=total_score, categories=categories
+        "view.html",
+        resume=resume,
+        total_score=total_score,
+        categories=categories,
+        ats_result=ats_result,
+        roles=list(ROLE_KEYWORDS.keys()),
     )
 
 
@@ -123,6 +134,27 @@ def rescore(resume_id):
     result = score_resume(extracted_text)
     save_score(resume_id, result["total_score"], json.dumps(result["categories"]))
     flash("Score recalculated.")
+    return redirect(url_for("view_resume", resume_id=resume_id))
+
+
+@app.route("/resume/<int:resume_id>/ats_check", methods=["POST"])
+def ats_check(resume_id):
+    """Run the ATS keyword checker (Module 3) against the resume for a
+    user-selected target role, and save the result."""
+    resume = get_resume_by_id(resume_id)
+    if resume is None:
+        flash("Resume not found.")
+        return redirect(url_for("index"))
+
+    role = request.form.get("role")
+    if role not in ROLE_KEYWORDS:
+        flash("Please select a valid job role.")
+        return redirect(url_for("view_resume", resume_id=resume_id))
+
+    _, _, _, extracted_text, _ = resume
+    result = check_ats(extracted_text, role)
+    save_ats_result(resume_id, role, json.dumps(result))
+    flash(f"ATS check complete for {role}.")
     return redirect(url_for("view_resume", resume_id=resume_id))
 
 

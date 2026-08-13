@@ -67,4 +67,60 @@
       </div>
     {% endif %}
   </div>
+
+  <p class="section-label" style="margin-top: 32px;">ATS compatibility</p>
+
+  <div class="ats-panel">
+    <form class="ats-role-form" action="{{ url_for('ats_check', resume_id=id) }}" method="post">
+      <label for="role">Target role</label>
+      <select class="role-select" name="role" id="role">
+        {% for role_option in roles %}
+          <option value="{{ role_option }}" {% if ats_result and ats_result.role == role_option %}selected{% endif %}>{{ role_option }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="ats-check-btn">{% if ats_result %}Re-check{% else %}Check ATS match{% endif %}</button>
+    </form>
+
+    {% if ats_result %}
+      <div class="doc-perf"></div>
+      <div class="ats-result-header">
+        <div>
+          <p class="ats-role-label">Checked against</p>
+          <p class="doc-title" style="font-size: 1.05rem; margin: 0;">{{ ats_result.role }}</p>
+        </div>
+        <div class="ats-percent {% if ats_result.match_percent >= 75 %}high{% elif ats_result.match_percent >= 50 %}mid{% else %}low{% endif %}">
+          {{ ats_result.match_percent }}%
+        </div>
+      </div>
+      <div class="ats-body">
+        <p class="keyword-group-label">Matched keywords ({{ ats_result.matched|length }})</p>
+        {% if ats_result.matched %}
+          <div class="chip-row">
+            {% for kw in ats_result.matched %}
+              <span class="chip matched">{{ kw }}</span>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="no-text" style="margin:0;">None found.</p>
+        {% endif %}
+
+        <p class="keyword-group-label">Missing keywords ({{ ats_result.missing|length }})</p>
+        {% if ats_result.missing %}
+          <div class="chip-row">
+            {% for kw in ats_result.missing %}
+              <span class="chip missing">{{ kw }}</span>
+            {% endfor %}
+          </div>
+          <p class="keyword-group-label">Suggestions</p>
+          <ul class="suggestion-list">
+            {% for suggestion in ats_result.suggestions %}
+              <li>{{ suggestion }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="no-text" style="margin:0;">All keywords for this role were found — great match!</p>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
 {% endblock %}

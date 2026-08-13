@@ -480,3 +480,125 @@ body {
   justify-content: space-between;
   gap: 16px;
 }
+
+/* ---- ATS panel ---- */
+.ats-panel {
+  background: var(--paper-raised);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius);
+  margin-top: 24px;
+  overflow: hidden;
+}
+
+.ats-role-form {
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ats-role-form label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.role-select {
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 0.88rem;
+  padding: 7px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.ats-check-btn {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.8rem;
+  padding: 7px 16px;
+  background: var(--ink);
+  color: var(--paper-raised);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.ats-check-btn:hover { background: var(--accent-teal); }
+
+.ats-result-header {
+  padding: 20px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ats-role-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  margin: 0 0 4px;
+}
+
+.ats-percent {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.8rem;
+}
+
+.ats-percent.high { color: var(--accent-teal); }
+.ats-percent.mid { color: var(--accent-amber); }
+.ats-percent.low { color: var(--error); }
+
+.ats-body {
+  padding: 4px 22px 22px;
+}
+
+.keyword-group-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  margin: 16px 0 8px;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.chip.matched { background: var(--accent-teal-soft); color: var(--accent-teal); }
+.chip.missing { background: var(--error-soft); color: var(--error); }
+
+.suggestion-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.86rem;
+}
+
+.suggestion-list li {
+  padding: 4px 0;
+  padding-left: 16px;
+  position: relative;
+}
+
+.suggestion-list li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--accent-amber);
+}

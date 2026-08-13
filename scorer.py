@@ -35,6 +35,8 @@ detected.").
 
 import re
 
+from utils import keyword_in_text
+
 # ---------------------------------------------------------------------------
 # Reference keyword lists used by the rule-based checks below.
 # ---------------------------------------------------------------------------
@@ -127,15 +129,10 @@ def _score_structure(headers_found):
 
 
 def _find_matched_skills(text_lower):
-    """Match skill keywords using boundary-aware regex so short keywords
-    (e.g. 'java') don't false-positive match inside longer ones (e.g.
-    'javascript')."""
-    matched = []
-    for skill in COMMON_SKILLS:
-        pattern = r"(?<![a-zA-Z0-9])" + re.escape(skill) + r"(?![a-zA-Z0-9])"
-        if re.search(pattern, text_lower):
-            matched.append(skill)
-    return matched
+    """Match skill keywords using the shared boundary-aware helper so short
+    keywords (e.g. 'java') don't false-positive match inside longer ones
+    (e.g. 'javascript')."""
+    return [s for s in COMMON_SKILLS if keyword_in_text(s, text_lower)]
 
 
 def _score_skills(text_lower, headers_found):

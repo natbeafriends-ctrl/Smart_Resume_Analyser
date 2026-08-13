@@ -33,14 +33,18 @@ def _column_exists(cursor, table, column):
 
 
 def _ensure_score_columns(conn, cursor):
-    """Add Module 2's score columns to the resumes table if they're not
-    already there. This lets a database created back in Module 1 (before
-    scoring existed) pick up the new columns without losing any existing
-    rows — no DROP TABLE, no data loss."""
+    """Add Module 2's score columns, and Module 3's ATS columns, to the
+    resumes table if they're not already there. This lets a database
+    created back in an earlier module pick up new columns without losing
+    any existing rows — no DROP TABLE, no data loss."""
     if not _column_exists(cursor, "resumes", "total_score"):
         cursor.execute("ALTER TABLE resumes ADD COLUMN total_score INT DEFAULT NULL")
     if not _column_exists(cursor, "resumes", "score_breakdown"):
         cursor.execute("ALTER TABLE resumes ADD COLUMN score_breakdown LONGTEXT DEFAULT NULL")
+    if not _column_exists(cursor, "resumes", "ats_role"):
+        cursor.execute("ALTER TABLE resumes ADD COLUMN ats_role VARCHAR(50) DEFAULT NULL")
+    if not _column_exists(cursor, "resumes", "ats_result"):
+        cursor.execute("ALTER TABLE resumes ADD COLUMN ats_result LONGTEXT DEFAULT NULL")
     conn.commit()
 
 
@@ -151,6 +155,43 @@ def get_score_by_id(resume_id):
         try:
             cursor.execute("""
                 SELECT total_score, score_breakdown FROM resumes WHERE id = %s
+            """, (resume_id,))
+            row = cursor.fetchone()
+            return row if row else (None, None)
+        finally:
+            cursor.close()
+    finally:
+        conn.close()
+
+
+def save_ats_result(resume_id, role, ats_result_json):
+    """Save (or overwrite) the ATS keyword-check result for a resume.
+    ats_result_json should already be a JSON string (see ats_checker.py's
+    check_ats() output, json.dumps'd by the caller)."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                UPDATE resumes SET ats_role = %s, ats_result = %s
+                WHERE id = %s
+            """, (role, ats_result_json, resume_id))
+            conn.commit()
+        finally:
+            cursor.close()
+    finally:
+        conn.close()
+
+
+def get_ats_result_by_id(resume_id):
+    """Return (ats_role, ats_result_json) for a resume.
+    Both are None if no ATS check has been run yet (or resume doesn't exist)."""
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT ats_role, ats_result FROM resumes WHERE id = %s
             """, (resume_id,))
             row = cursor.fetchone()
             return row if row else (None, None)
